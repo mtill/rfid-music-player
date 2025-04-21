@@ -1,0 +1,27 @@
+{
+  "host": "localhost",
+  "port": 6600,
+  "pwd": null,
+
+  "serverAudioPath": null,
+
+  "minVolume": 20,
+  "maxVolume": 100,
+  "volumeSteps": 5,
+  "initialVolume": 100,
+  "muteTimeoutS": 1800,
+
+  "lirc": true,
+  "lircdevice": "gpio_ir_recv",
+  "toggleLockKeys": [],
+
+  "sameCardDelay": {"default": 2, "cmd://volumeup": 0, "cmd://volumedown": 0},
+
+  "rfidReaderNames": null,
+  "latestRFIDFile": "/var/tmp/Latest_RFID",
+
+  "soundEffects": {"wait": "effects/waitmusic.ogg"},
+  "startupfolder": null
+
+}
+
