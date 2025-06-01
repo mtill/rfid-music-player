@@ -64,13 +64,14 @@ class MPDConnection():
 
 
 class MusicPlayer():
-    def __init__(self, dir_path, serverAudioPath, volumeSteps, minVolume, maxVolume, muteTimeoutS):
+    def __init__(self, dir_path, serverAudioPath, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos):
         self.dir_path = dir_path
         self.serverAudioPath = serverAudioPath
         self.volumeSteps = volumeSteps
         self.minVolume = minVolume
         self.maxVolume = maxVolume
         self.muteTimeoutS = muteTimeoutS
+        self.doSavePos = doSavePos
 
         self.currentFolder = None
         self.currentFolderConf = None
@@ -99,6 +100,9 @@ class MusicPlayer():
             self.aplayProcess.kill()
 
     def savePos(self, client):
+        if not self.doSavePos:
+            return False
+
         if self.currentFolder is not None:
             absFolder = os.path.join(self.dir_path, self.audiofolder, self.currentFolder)
             if self.currentFolderConf is not None and self.currentFolderConf.get("resume", False) and os.path.exists(absFolder):
@@ -264,7 +268,7 @@ class MusicPlayer():
         self.pause(client=client)
         timestr = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         thefile = os.path.join(self.absRecordingsDir, timestr + ".wav")
-        self.recordProcess = subprocess.Popen(["/usr/bin/arecord", "-D", "mic_softvol", "--duration=" + str(durationInSeconds), "-f", "cd", "-vv", thefile], close_fds=True)   # running in background
+        self.recordProcess = subprocess.Popen(["/usr/bin/arecord", "-D", "default", "--duration=" + str(durationInSeconds), "-f", "cd", "-vv", thefile], close_fds=True)   # running in background
         return True
 
     def playLastRecord(self, client):
@@ -656,7 +660,8 @@ if __name__ == "__main__":
                          volumeSteps=config.get("volumeSteps", 5),
                          minVolume=config.get("minVolume", None),
                          maxVolume=config.get("maxVolume", None),
-                         muteTimeoutS=config.get("muteTimeoutS", None))
+                         muteTimeoutS=config.get("muteTimeoutS", None),
+                         doSavePos=config.get("savePos", True))
 
     inputThreads = []
     if config.get("rfidReaderNames", None) is not None:
@@ -702,5 +707,4 @@ if __name__ == "__main__":
 
     for t2 in inputThreads:
         t2.join()
-    player.join()
 
