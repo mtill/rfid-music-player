@@ -23,6 +23,16 @@ from mpd import MPDClient
 from RFIDReader import RFIDReader
 
 
+# Recursive function to iterate through all files in a directory and its subdirectories
+# alternatively, you can use `pathlib.Path.rglob('**/*', recurse_symlinks=True)` to achieve the same result, but recurse_symlinks is only available in Python 3.13+
+def _iterdir_recursive(path: Path):
+    for p in path.iterdir():
+        if p.is_dir():
+            yield from _iterdir_recursive(p)
+        else:
+            yield p
+
+
 class MPDConnection():
     def __init__(self, host, port, pwd, closeAfterSeconds=7):
         self.client = MPDClient()
@@ -64,7 +74,7 @@ class MPDConnection():
 
 
 class MusicPlayer():
-    def __init__(self, dir_path, serverAudioPath, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos):
+    def __init__(self, dir_path, serverAudioPath, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos, doUpdateBeforePlaying):
         self.dir_path = dir_path
         self.serverAudioPath = serverAudioPath
         self.volumeSteps = volumeSteps
@@ -72,6 +82,7 @@ class MusicPlayer():
         self.maxVolume = maxVolume
         self.muteTimeoutS = muteTimeoutS
         self.doSavePos = doSavePos
+        self.doUpdateBeforePlaying = doUpdateBeforePlaying
 
         self.currentFolder = None
         self.currentFolderConf = None
@@ -156,6 +167,15 @@ class MusicPlayer():
                 theuri = relfolder + "/" + theuri[2:]
 
         if folderType in ["music"]:
+
+            if self.doUpdateBeforePlaying:
+                client.update(relfolder)
+                while True:
+                    update_status = client.status().get("updating_db", None)
+                    if update_status is None or len(update_status) == 0:
+                        break
+                    time.sleep(0.5)
+
             client.add(relfolder)
         elif folderType in ["stream"]:
             if theuri is not None:
@@ -397,7 +417,7 @@ def resolveShortcut(dir_path, shortcutsfolder, audiofolder, cardid):
             shortcut = os.path.relpath(abspath, os.path.join(dir_path, audiofolder))
     else:
         af = Path(audiofolder)
-        for c in af.glob("**/"):
+        for c in _iterdir_recursive(af):   #af.glob("**/"):
             if c.name.find(cardid) != -1:
                 shortcutPrefix = "folder"
                 shortcut = str(c.relative_to(af))
@@ -661,7 +681,8 @@ if __name__ == "__main__":
                          minVolume=config.get("minVolume", None),
                          maxVolume=config.get("maxVolume", None),
                          muteTimeoutS=config.get("muteTimeoutS", None),
-                         doSavePos=config.get("savePos", True))
+                         doSavePos=config.get("savePos", True),
+                         doUpdateBeforePlaying=config.get("updateBeforePlaying", False))
 
     inputThreads = []
     if config.get("rfidReaderNames", None) is not None:
