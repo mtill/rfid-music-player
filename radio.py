@@ -25,12 +25,14 @@ from RFIDReader import RFIDReader
 
 # Recursive function to iterate through all files in a directory and its subdirectories
 # alternatively, you can use `pathlib.Path.rglob('**/*', recurse_symlinks=True)` to achieve the same result, but recurse_symlinks is only available in Python 3.13+
-def _iterdir_recursive(path: Path):
+def _iterdir_recursive(path: Path, dirsonly=False):
     for p in path.iterdir():
         if p.is_dir():
-            yield from _iterdir_recursive(p)
-        else:
             yield p
+            yield from _iterdir_recursive(p, dirsonly=dirsonly)
+        else:
+            if not dirsonly:
+                yield p
 
 
 class MPDConnection():
@@ -417,7 +419,7 @@ def resolveShortcut(dir_path, shortcutsfolder, audiofolder, cardid):
             shortcut = os.path.relpath(abspath, os.path.join(dir_path, audiofolder))
     else:
         af = Path(audiofolder)
-        for c in _iterdir_recursive(af):   #af.glob("**/"):
+        for c in _iterdir_recursive(af, dirsonly=True):   #af.glob("**/"):
             if c.name.find(cardid) != -1:
                 shortcutPrefix = "folder"
                 shortcut = str(c.relative_to(af))
