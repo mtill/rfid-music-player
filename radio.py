@@ -26,7 +26,17 @@ from RFIDReader import RFIDReader
 # Recursive function to iterate through all files in a directory and its subdirectories
 # alternatively, you can use `pathlib.Path.rglob('**/*', recurse_symlinks=True)` to achieve the same result, but recurse_symlinks is only available in Python 3.13+
 def _iterdir_recursive(path: Path, dirsonly=False):
+
+    # traverse files first
+    thedirs = []
+    thefiles = []
     for p in path.iterdir():
+        if p.is_dir():
+            thedirs.append(p)
+        else:
+            thefiles.append(p)
+
+    for p in sorted(thefiles) + sorted(thedirs):
         if p.is_dir():
             yield p
             yield from _iterdir_recursive(p, dirsonly=dirsonly)
@@ -684,7 +694,7 @@ if __name__ == "__main__":
                          maxVolume=config.get("maxVolume", None),
                          muteTimeoutS=config.get("muteTimeoutS", None),
                          doSavePos=config.get("savePos", True),
-                         doUpdateBeforePlaying=config.get("updateBeforePlaying", False))
+                         doUpdateBeforePlaying=config.get("updateBeforePlaying", True))
 
     inputThreads = []
     if config.get("rfidReaderNames", None) is not None:
