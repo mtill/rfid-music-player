@@ -27,6 +27,11 @@ fsck /dev/sda1
 mount /dev/sda1 /mnt/usb -o defaults,auto,nofail
 ```
 
+- make that script executable:
+```
+chmod a+x /etc/mount-usb.sh
+```
+
 - allow user "pi" to run mount-usb.sh without password by adding the following to /etc/sudoers:
 ```
 pi ALL=(ALL) NOPASSWD: /etc/mount-usb.sh
