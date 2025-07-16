@@ -56,7 +56,7 @@ ln -s /mnt/usb/music audiofolders
   when using a raspberry pi, you can enable auto-login for user "pi" via raspi-config; then, add the following to /home/pi/.bashrc:
 ```
 sudo /etc/mount-usb.sh
-mpc -h YOUR\_MPD\_PASSWORD@localhost update
+mpc -h YOUR_MPD_PASSWORD@localhost update
 cd RFID_REPO_PATH
 ./radio.py \>/var/tmp/radio-err.log 2>&1 &
 ```
