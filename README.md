@@ -35,18 +35,18 @@ pi ALL=(ALL) NOPASSWD: /etc/mount-usb.sh
 - configure mpd
   set the following entries in /etc/mpd.conf:
 ```
-password "YOUR\_MPD\_PASSWORD@read,add,control,admin"
-follow\_outside\_symlinks "yes"
-follow\_inside\_symlinks "yes"
-auto\_update	"yes"
-bind\_to\_address "0.0.0.0"
-music\_directory "/mnt/usb/music"
-playlist\_directory "/mnt/usb/playlists"
+password "YOUR_MPD_PASSWORD@read,add,control,admin"
+follow_outside_symlinks "yes"
+follow_inside_symlinks "yes"
+auto_update	"yes"
+bind_to_address "0.0.0.0"
+music_directory "/mnt/usb/music"
+playlist_directory "/mnt/usb/playlists"
 ```
 
 - link your music folder
 ```
-cd PATH\_TO\_RFID\_MUSIC\_PLAYER
+cd PATH_TO_RFID_MUSIC_PLAYER
 cd shared
 cd audiofolders
 ln -s /mnt/usb/music audiofolders
@@ -57,7 +57,7 @@ ln -s /mnt/usb/music audiofolders
 ```
 sudo /etc/mount-usb.sh
 mpc -h YOUR\_MPD\_PASSWORD@localhost update
-cd RFID\_REPO\_PATH
+cd RFID_REPO_PATH
 ./radio.py \>/var/tmp/radio-err.log 2>&1 &
 ```
 
