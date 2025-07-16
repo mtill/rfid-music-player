@@ -1,25 +1,33 @@
 {
   "host": "localhost",
   "port": 6600,
-  "pwd": null,
+  "pwd": "YOUR_MPD_PASSWORD",
 
-  "minVolume": 20,
+  "minVolume": 10,
   "maxVolume": 100,
   "volumeSteps": 5,
-  "initialVolume": 100,
+  "initialVolume": 70,
   "muteTimeoutS": 1800,
 
   "lirc": true,
   "lircdevice": "gpio_ir_recv",
+  "lircLocked": false,
+  "lockKeys": [],
+  "unlockKeys": [],
   "toggleLockKeys": [],
 
   "sameCardDelay": {"default": 2, "cmd://volumeup": 0, "cmd://volumedown": 0},
 
-  "rfidReaderNames": null,
+  "rfidReaderNames": ["HXGCoLtd Keyboard", "Sycreader RFID Technology Co., Ltd SYC ID&IC USB Reader"],
   "latestRFIDFile": "/var/tmp/Latest_RFID",
 
-  "soundEffects": {"wait": "effects/waitmusic.ogg"},
-  "startupfolder": null
+  "soundEffects": {"startup": "effects/cow.ogg",
+                   "wait": "effects/waitmusic.ogg"},
+  "_startupfolder": "Radio/B5",
 
+  "jumpcards": {
+    "0002903098XXX": 0,
+    "0002893971XXX": 3
+  }
 }
 

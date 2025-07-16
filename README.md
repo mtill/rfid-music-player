@@ -5,6 +5,13 @@ Similar to the phoniebox.de project - but more lightweight.
 
 
 ## how to install
+- install dependencies
+```
+pip3 install python-mpd2 evdev
+```
+
+
+
 - checkout the repository (e.g., on a raspberry pi, run the following command as user "pi"):
 ```
 git clone https://github.com/mtill/rfid-music-player.git
@@ -14,6 +21,7 @@ git clone https://github.com/mtill/rfid-music-player.git
 ```
 cp config-template.json config.json
 ```
+Now, update the settings from config.json accordingly. As a minimum, you should set "rfidReaderNames" and include the name of your RFID USB reader. You may use the list-devices.py script to identify connected USB devices.
 
 - add an USB flash drive (e.g., formatted with NTFS file system)
 ```
