@@ -86,9 +86,8 @@ class MPDConnection():
 
 
 class MusicPlayer():
-    def __init__(self, dir_path, serverAudioPath, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos, doUpdateBeforePlaying):
+    def __init__(self, dir_path, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos, doUpdateBeforePlaying):
         self.dir_path = dir_path
-        self.serverAudioPath = serverAudioPath
         self.volumeSteps = volumeSteps
         self.minVolume = minVolume
         self.maxVolume = maxVolume
@@ -686,9 +685,7 @@ if __name__ == "__main__":
     connection = MPDConnection(host=config["host"], port=config["port"], pwd=config.get("pwd", None))
     inputDevices = [evdev.InputDevice(path) for path in evdev.list_devices()]
 
-    serverAudioPath = config.get("serverAudioPath", None)
     player = MusicPlayer(dir_path=dir_path,
-                         serverAudioPath=serverAudioPath,
                          volumeSteps=config.get("volumeSteps", 5),
                          minVolume=config.get("minVolume", None),
                          maxVolume=config.get("maxVolume", None),

@@ -3,8 +3,6 @@
   "port": 6600,
   "pwd": null,
 
-  "serverAudioPath": null,
-
   "minVolume": 20,
   "maxVolume": 100,
   "volumeSteps": 5,
