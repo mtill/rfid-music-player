@@ -58,7 +58,7 @@ ln -s /mnt/usb/music audiofolders
 sudo /etc/mount-usb.sh
 mpc -h YOUR_MPD_PASSWORD@localhost update
 cd RFID_REPO_PATH
-./radio.py \>/var/tmp/radio-err.log 2>&1 &
+./radio.py >/var/tmp/radio-err.log 2>&1 &
 ```
 
 - enable read-only overlay by running raspi-config and enabling overlay (can be found in the "performance" submenu)
