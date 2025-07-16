@@ -6,60 +6,60 @@ Similar to the phoniebox.de project - but more lightweight.
 
 ## how to install
 - checkout the repository (e.g., on a raspberry pi, run the following command as user "pi"):
-        ```
-        git clone https://github.com/mtill/rfid-music-player.git
-        ```
+```
+git clone https://github.com/mtill/rfid-music-player.git
+```
 
 - setup config.json configuration file:
-        ```
-        cp config-template.json config.json
-        ```
+```
+cp config-template.json config.json
+```
 
 - add an USB flash drive (e.g., formatted with NTFS file system)
-        ```
-        mkdir /mnt/usb/music
-        mkdir /mnt/usb/playlists
-        ```
+```
+mkdir /mnt/usb/music
+mkdir /mnt/usb/playlists
+```
 
 - create mount script /etc/mount-usb.sh:
-        ```
-        fsck /dev/sda1
-        mount /dev/sda1 /mnt/usb -o defaults,auto,nofail
-        ```
+```
+fsck /dev/sda1
+mount /dev/sda1 /mnt/usb -o defaults,auto,nofail
+```
 
 - allow user "pi" to run mount-usb.sh without password by adding the following to /etc/sudoers:
-        ```
-        pi ALL=(ALL) NOPASSWD: /etc/mount-usb.sh
-        ```
+```
+pi ALL=(ALL) NOPASSWD: /etc/mount-usb.sh
+```
 
 - configure mpd
   set the following entries in /etc/mpd.conf:
-        ```
-        password "YOUR\_MPD\_PASSWORD@read,add,control,admin"
-        follow\_outside\_symlinks "yes"
-        follow\_inside\_symlinks "yes"
-        auto\_update	"yes"
-        bind\_to\_address "0.0.0.0"
-        music\_directory "/mnt/usb/music"
-        playlist\_directory "/mnt/usb/playlists"
-        ```
+```
+password "YOUR\_MPD\_PASSWORD@read,add,control,admin"
+follow\_outside\_symlinks "yes"
+follow\_inside\_symlinks "yes"
+auto\_update	"yes"
+bind\_to\_address "0.0.0.0"
+music\_directory "/mnt/usb/music"
+playlist\_directory "/mnt/usb/playlists"
+```
 
 - link your music folder
-        ```
-        cd PATH\_TO\_RFID\_MUSIC\_PLAYER
-        cd shared
-        cd audiofolders
-        ln -s /mnt/usb/music audiofolders
-        ```
+```
+cd PATH\_TO\_RFID\_MUSIC\_PLAYER
+cd shared
+cd audiofolders
+ln -s /mnt/usb/music audiofolders
+```
 
 - enable auto-start
   when using a raspberry pi, you can enable auto-login for user "pi" via raspi-config; then, add the following to /home/pi/.bashrc:
-        ```
-        sudo /etc/mount-usb.sh
-        mpc -h YOUR\_MPD\_PASSWORD@localhost update
-        cd RFID\_REPO\_PATH
-        ./radio.py \>/var/tmp/radio-err.log 2>&1 &
-        ```
+```
+sudo /etc/mount-usb.sh
+mpc -h YOUR\_MPD\_PASSWORD@localhost update
+cd RFID\_REPO\_PATH
+./radio.py \>/var/tmp/radio-err.log 2>&1 &
+```
 
 - enable read-only overlay by running raspi-config and enabling overlay (can be found in the "performance" submenu)
 
