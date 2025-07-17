@@ -7,7 +7,7 @@
   "maxVolume": 100,
   "volumeSteps": 5,
   "initialVolume": 70,
-  "muteTimeoutS": 1800,
+  "muteTimeoutS": 21600,
 
   "lirc": true,
   "lircdevice": "gpio_ir_recv",
@@ -23,11 +23,7 @@
 
   "soundEffects": {"startup": "effects/cow.ogg",
                    "wait": "effects/waitmusic.ogg"},
-  "_startupfolder": "Radio/B5",
+  "_startupfolder": "Radio/RockAntenne"
 
-  "jumpcards": {
-    "0002903098XXX": 0,
-    "0002893971XXX": 3
-  }
 }
 
