@@ -7,7 +7,7 @@ Similar to the phoniebox.de project - but more lightweight.
 ## how to install
 - install dependencies
 ```
-pip3 install python-mpd2 evdev
+sudo apt-get install mpd mpc python3-mpd python3-evdev
 ```
 
 
@@ -101,5 +101,13 @@ Or, if you have an MP3 stream, use the following example:
 (example for Klassik Radio Deutschland)
 
 
+## how to configure infrared devices (optional)
+On your raspberry pi, enable IR via /boot/firmware/config.txt. Example:
+```
+dtoverlay=gpio-ir,gpio_pin=4
+```
+
+## how to control your music box from your mobile phone
+On Android, simply install one of the MPD client apps, e.g., M.A.L.P. .
 
 
