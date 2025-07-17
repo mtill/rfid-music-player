@@ -61,7 +61,6 @@ playlist_directory "/mnt/usb/playlists"
 ```
 cd PATH_TO_RFID_MUSIC_PLAYER
 cd shared
-cd audiofolders
 ln -s /mnt/usb/music audiofolders
 ```
 
