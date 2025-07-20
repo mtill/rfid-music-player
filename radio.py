@@ -86,8 +86,9 @@ class MPDConnection():
 
 
 class MusicPlayer():
-    def __init__(self, dir_path, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos, doUpdateBeforePlaying):
+    def __init__(self, dir_path, serverAudioPath, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos, doUpdateBeforePlaying):
         self.dir_path = dir_path
+        self.serverAudioPath = serverAudioPath
         self.volumeSteps = volumeSteps
         self.minVolume = minVolume
         self.maxVolume = maxVolume
@@ -465,7 +466,7 @@ def playAction(dir_path, player, connection, cardid):
 
 
 class lircThread(threading.Thread):
-    def __init__(self, dir_path, player, connection, lircDevice, lockKeys, unlockKeys, toggleLockKeys, lircLocked):
+    def __init__(self, dir_path, player, connection, lircDevice, lockKeys, unlockKeys, toggleLockKeys, lircLocked, prefix="lirc"):
         threading.Thread.__init__(self)
         self.dir_path = dir_path
         self.player = player
@@ -477,6 +478,7 @@ class lircThread(threading.Thread):
 
         self.isUp = False
         self.isLocked = lircLocked
+        self.prefix = prefix
         self.keynums = {'KEY_1': 1,
                         'KEY_2': 2,
                         'KEY_3': 3,
@@ -550,7 +552,7 @@ class lircThread(threading.Thread):
                         else:
 
                             if ch == "KEY_OK" and jumptime != 0:   # some number has been entered before
-                                playAction(dir_path=self.dir_path, player=self.player, connection=self.connection, cardid=jumpval)
+                                playAction(dir_path=self.dir_path, player=self.player, connection=self.connection, cardid=self.prefix+jumpval)
                             elif ch in ["KEY_CHANNELDOWN", "KEY_LEFT"] and duration >= 1:
                                 with self.connection.getConnectedClient() as client:
                                     self.player.seek(client=client, reltimeS=-self._getSeekSeconds(duration=duration))
@@ -576,18 +578,18 @@ class lircThread(threading.Thread):
 
 
 class rfidThread(threading.Thread):
-    def __init__(self, dir_path, reader, player, connection, sameCardDelay, jumpcards, latestRFIDFile, lockCardIDs, unlockCardIDs, toggleLockCardIDs, rfidLocked):
+    def __init__(self, dir_path, reader, player, connection, sameCardDelay, latestRFIDFile, lockCardIDs, unlockCardIDs, toggleLockCardIDs, rfidLocked, prefix=""):
         threading.Thread.__init__(self)
         self.dir_path = dir_path
         self.reader = reader
         self.player = player
         self.connection = connection
         self.sameCardDelay = sameCardDelay
-        self.jumpcards = jumpcards
         self.latestRFIDFile = latestRFIDFile
         self.lockCardIDs = lockCardIDs
         self.unlockCardIDs = unlockCardIDs
         self.toggleLockCardIDs = toggleLockCardIDs
+        self.prefix = prefix
 
         self.isUp = False
         self.isLocked = rfidLocked
@@ -597,9 +599,6 @@ class rfidThread(threading.Thread):
         previous_performedAction = None
         previous_id = ""
         previous_time = 0
-        jumpval = ""
-        jumpcount = 0
-        jumptime = 0
 
         self.isUp = True
         while self.isUp:
@@ -626,39 +625,13 @@ class rfidThread(threading.Thread):
                     if self.isLocked:
                         continue
 
-                    if cardid in self.jumpcards:
-                        previous_time = 0
-                        if time.time() - jumptime > 5:
-                            jumpval = ""
-                            jumpcount = 0
-                            jumptime = 0
-
-                        jumpval = jumpval + str(self.jumpcards[cardid])
-                        jumpcount = jumpcount + 1
-                        jumptime = time.time()
-
-                        if jumpcount == 3:
-                            #with self.connection.getConnectedClient() as client:
-                            #    self.player.jumpTo(client=client, pos=int(jumpstring))
-                            previous_id = jumpval
-                            previous_performedAction = playAction(dir_path=self.dir_path, player=self.player, connection=self.connection, cardid=previous_id)
-                            previous_time = time.time()
-                            jumpval = ""
-                            jumpcount = 0
-                            jumptime = 0
-
+                    thisCardDelay = self.sameCardDelay.get(previous_performedAction, defaultCardDelay)
+                    if cardid == previous_id and (time.time() - previous_time) < float(thisCardDelay):
+                        logging.debug('Ignoring card due to sameCardDelay')
                     else:
-                        thisCardDelay = self.sameCardDelay.get(previous_performedAction, defaultCardDelay)
-                        if cardid == previous_id and (time.time() - previous_time) < float(thisCardDelay):
-                            logging.debug('Ignoring card due to sameCardDelay')
-                        else:
-                            previous_performedAction = playAction(dir_path=self.dir_path, player=self.player, connection=self.connection, cardid=cardid)
-                            previous_id = cardid
-                            previous_time = time.time()
-
-                        jumpval = ""
-                        jumpcount = 0
-                        jumptime = 0
+                        previous_performedAction = playAction(dir_path=self.dir_path, player=self.player, connection=self.connection, cardid=self.prefix+cardid)
+                        previous_id = cardid
+                        previous_time = time.time()
 
             except Exception as e:
                 logging.error('Execution failed: {e}'.format(e=e))
@@ -685,7 +658,9 @@ if __name__ == "__main__":
     connection = MPDConnection(host=config["host"], port=config["port"], pwd=config.get("pwd", None))
     inputDevices = [evdev.InputDevice(path) for path in evdev.list_devices()]
 
+    serverAudioPath = config.get("serverAudioPath", None)
     player = MusicPlayer(dir_path=dir_path,
+                         serverAudioPath=serverAudioPath,
                          volumeSteps=config.get("volumeSteps", 5),
                          minVolume=config.get("minVolume", None),
                          maxVolume=config.get("maxVolume", None),
@@ -698,7 +673,6 @@ if __name__ == "__main__":
         reader = RFIDReader(deviceNames=config["rfidReaderNames"])
         inputThreads.append(rfidThread(dir_path=dir_path, reader=reader, player=player, connection=connection,
                                     sameCardDelay=config.get("sameCardDelay", None),
-                                    jumpcards=config.get("jumpcards", {}),
                                     latestRFIDFile=config["latestRFIDFile"],
                                     lockCardIDs=config.get("lockCardIDs", None),
                                     unlockCardIDs=config.get("unlockCardIDs", None),
