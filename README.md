@@ -107,6 +107,9 @@ On your raspberry pi, enable IR via /boot/firmware/config.txt. Example:
 dtoverlay=gpio-ir,gpio_pin=4
 ```
 
+Folders can then be mapped to numbers entered via infrared control by renaming folders to, e.g., "party songs for children-lirc1" (please note the mandatory prefix "lirc"). Then, when pressing "1 + KEY\_OK" on your infrared remote, the content of the folder is being played.
+
+
 ## how to control your music box from your mobile phone
 On Android, simply install one of the MPD client apps, e.g., M.A.L.P. .
 
