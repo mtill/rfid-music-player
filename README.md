@@ -77,10 +77,21 @@ cd RFID_REPO_PATH
 
 
 ## how to use
+
+### how to add music
 On the USB flash drive, map RFID codes to the music folders by appending the RFID code to the folder names.
 As an example, if you have a folder named "party songs for children" and you'd like to map it to RFID card 00012345, then rename that folder to, e.g., "party songs for children-00012345".
 It's not important how exactly you're going to name that folder, as long as the exact RFID code is part of the folder name.
 
+### how to add audiobooks
+This works analogously to adding music files. For audiobooks, however, you usually want to resume listening on the latest playback position. To enable auto-resume, create a folder "audiobooks" on your USB flash drive and in that folder, create a file "folder.json" with the following content:
+```
+{
+  "resume": true
+}
+```
+
+### how to add radio streams
 You can also add radio streams; to do so, create an empty folder, and inside this folder, create a file "folder.json" with the following data:
 ```
 {
@@ -100,8 +111,7 @@ Or, if you have an MP3 stream, use the following example:
 ```
 (example for Klassik Radio Deutschland)
 
-
-## how to configure infrared devices (optional)
+### how to configure infrared devices (optional)
 On your raspberry pi, enable IR via /boot/firmware/config.txt. Example:
 ```
 dtoverlay=gpio-ir,gpio_pin=4
@@ -110,7 +120,7 @@ dtoverlay=gpio-ir,gpio_pin=4
 Folders can then be mapped to numbers entered via infrared remote by renaming folders to, e.g., "party songs for children-lirc1" (please note the mandatory prefix "lirc"). Then, when pressing "1 + KEY\_OK" on your infrared remote, the content of the folder is being played.
 
 
-## how to control your music box from your mobile phone
+### how to control your music box from your mobile phone
 On Android, simply install one of the MPD client apps, e.g., M.A.L.P. .
 
 
