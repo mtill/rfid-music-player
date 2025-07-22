@@ -192,7 +192,7 @@ class MusicPlayer():
             client.add(relfolder)
         elif folderType in ["stream"]:
             if theuri is not None:
-                client.add(folderConf["uri"])
+                client.add(theuri)
         elif folderType in ["playlist", "playlist-stream"]:
             if theuri is not None:
                 client.load(theuri)
