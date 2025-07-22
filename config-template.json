@@ -3,6 +3,8 @@
   "port": 6600,
   "pwd": "YOUR_MPD_PASSWORD",
 
+  "alsaAudioDevice": "hw:CARD=Audio,DEV=0",
+
   "minVolume": 10,
   "maxVolume": 100,
   "volumeSteps": 5,

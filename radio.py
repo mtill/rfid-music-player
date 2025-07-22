@@ -11,7 +11,6 @@ logging.basicConfig(filename=logfilename, filemode='w', level=logging.INFO)
 import time
 import datetime
 import json
-import os
 from pathlib import Path
 import subprocess
 import threading
@@ -92,13 +91,14 @@ class MPDConnection():
 
 
 class MusicPlayer():
-    def __init__(self, dir_path, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos, doUpdateBeforePlaying):
+    def __init__(self, dir_path: Path, volumeSteps, minVolume, maxVolume, muteTimeoutS, doSavePos, alsaAudioDevice, doUpdateBeforePlaying):
         self.dir_path = dir_path
         self.volumeSteps = volumeSteps
         self.minVolume = minVolume
         self.maxVolume = maxVolume
         self.muteTimeoutS = muteTimeoutS
         self.doSavePos = doSavePos
+        self.alsaAudioDevice = alsaAudioDevice
         self.doUpdateBeforePlaying = doUpdateBeforePlaying
 
         self.currentFolder = None
@@ -108,10 +108,9 @@ class MusicPlayer():
         self.thetimer = None
 
         self.soundEffects = {}
-        self.audiofolder = os.path.join("shared", "audiofolders")
-        self.shortcutsfolder = os.path.join("shared", "shortcuts")
-        self.relRecordingsDir = "Recordings"
-        self.absRecordingsDir = os.path.join(dir_path, self.audiofolder, self.relRecordingsDir)
+        self.audiofolder = Path("shared", "audiofolders")
+        self.shortcutsfolder = Path("shared", "shortcuts")
+        self.absRecordingsDir = dir_path / self.audiofolder / "Recordings"
 
     def _isRecording(self):
         return self.recordProcess is not None and self.recordProcess.poll() is None
@@ -132,15 +131,15 @@ class MusicPlayer():
             return False
 
         if self.currentFolder is not None:
-            absFolder = os.path.join(self.dir_path, self.audiofolder, self.currentFolder)
-            if self.currentFolderConf is not None and self.currentFolderConf.get("resume", False) and os.path.exists(absFolder):
+            absFolder = self.dir_path / self.audiofolder / self.currentFolder
+            if self.currentFolderConf is not None and self.currentFolderConf.get("resume", False) and absFolder.exists():
                 currentStatus = client.status()
                 lastPos = {
                     "song": currentStatus.get("song", None),
                     "elapsed": currentStatus.get("elapsed", None)
                 }
 
-                lastPosFile = os.path.join(absFolder, "lastPos.json")
+                lastPosFile = absFolder / "lastPos.json"
                 try:
                     with open(lastPosFile, "w") as f:
                         json.dump(lastPos, f)
@@ -150,19 +149,18 @@ class MusicPlayer():
         return True
 
     def playFolder(self, client, relfolder):
-        logging.info('playFolder: ' + relfolder)
+        logging.info('playFolder: ' + str(relfolder))
         self._stopAlsaProcesses()
         self.savePos(client=client)
 
-        absFolder = os.path.join(self.dir_path, self.audiofolder, relfolder)
+        absFolder = self.dir_path / self.audiofolder / relfolder
+        absFolderRel = self.dir_path / self.audiofolder
 
-        relfoldersplit = os.path.split(relfolder)
-        absFolderRel = os.path.join(self.dir_path, self.audiofolder)
         folderConf = {}
-        for r in relfoldersplit:
-            absFolderRel = os.path.join(absFolderRel, r)
-            folderConfFile = os.path.join(absFolderRel, "folder.json")
-            if os.path.exists(folderConfFile):
+        for r in relfolder.parts:
+            absFolderRel = absFolderRel / r
+            folderConfFile = absFolderRel / "folder.json"
+            if folderConfFile.exists():
                 with open(folderConfFile, "r") as folderConfFileObj:
                     folderConf |= json.load(folderConfFileObj)
 
@@ -173,13 +171,9 @@ class MusicPlayer():
         folderType = folderConf.get("type", "music")
         theuri = folderConf.get("uri", None)
         if theuri is not None and theuri.startswith("./"):
-            if relfolder.endswith("/"):
-                theuri = relfolder + theuri[2:]
-            else:
-                theuri = relfolder + "/" + theuri[2:]
+            theuri = relfolder / theuri[2:]
 
         if folderType in ["music"]:
-
             if self.doUpdateBeforePlaying:
                 client.update(relfolder)
                 while True:
@@ -189,12 +183,15 @@ class MusicPlayer():
                     time.sleep(0.5)
 
             client.add(relfolder)
+
         elif folderType in ["stream"]:
             if theuri is not None:
-                client.add(theuri)
+                client.add(str(theuri))
+
         elif folderType in ["playlist", "playlist-stream"]:
             if theuri is not None:
-                client.load(theuri)
+                client.load(str(theuri))
+
         else:
             logging.info("unknown folder type: " + folderType)
             return
@@ -203,10 +200,10 @@ class MusicPlayer():
         client.repeat(1)
 
         if folderConf.get("resume", False):
-            lastPosFile = os.path.join(absFolder, "lastPos.json")
+            lastPosFile = absFolder / "lastPos.json"
             lastPos = None
             try:
-                if os.path.exists(lastPosFile):
+                if lastPosFile.exists():
                     with open(lastPosFile, "r") as lastPosFileObj:
                         lastPos = json.load(lastPosFileObj)
             except:
@@ -273,14 +270,14 @@ class MusicPlayer():
         self._stopAlsaProcesses()
         client.play()
 
-    def playSingleFile(self, client, relSoundFile, useAplay=False, repeat=False):
+    def playSingleFile(self, client, relSoundFile: Path, useAplay=False, repeat=False):
         if useAplay:
             if repeat:
                 raise Exception("repeat only works if useAplay=False")
             self.pause(client=client)
             self._stopAlsaProcesses()
-            thefile = os.path.join(self.dir_path, relSoundFile)
-            self.aplayProcess = subprocess.Popen(["/usr/bin/aplay", thefile], close_fds=True)   # running in background
+            thefile = self.dir_path / relSoundFile
+            self.aplayProcess = subprocess.Popen(["/usr/bin/aplay", "-D", self.alsaAudioDevice, str(thefile)], close_fds=True)   # running in background
         else:
             self._stopAlsaProcesses()
             self.savePos(client=client)
@@ -299,16 +296,15 @@ class MusicPlayer():
         self._stopAlsaProcesses()
         self.pause(client=client)
         timestr = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        thefile = os.path.join(self.absRecordingsDir, timestr + ".wav")
-        self.recordProcess = subprocess.Popen(["/usr/bin/arecord", "-D", "default", "--duration=" + str(durationInSeconds), "-f", "cd", "-vv", thefile], close_fds=True)   # running in background
+        thefile = self.absRecordingsDir / (timestr + ".wav")
+        self.recordProcess = subprocess.Popen(["/usr/bin/arecord", "-D", self.alsaAudioDevice, "--duration=" + str(durationInSeconds), "-f", "cd", "-vv", str(thefile)], close_fds=True)   # running in background
         return True
 
     def playLastRecord(self, client):
         self.pause(client=client)
-        for i in sorted(Path(self.absRecordingsDir).iterdir(), key=os.path.getmtime, reverse=True):
-            absFile = os.path.join(self.absRecordingsDir, i)
-            if os.path.isfile(absFile) and absFile.endswith(".wav"):
-                self.playSingleFile(client=client, relSoundFile=os.path.join(self.relRecordingsDir, i), useAplay=True)
+        for absFile in sorted(self.absRecordingsDir.iterdir(), key=lambda ii: ii.stat().st_mtime, reverse=True):
+            if absFile.is_file() and absFile.name.lower().endswith(".wav"):
+                self.playSingleFile(client=client, relSoundFile=absFile, useAplay=True)
                 return
 
     def updateDB(self, client, uri=None):
@@ -403,15 +399,15 @@ def cmdAction(player, connection, actionstring):
             else:
                 logging.info("unknown cmd action: " + actionstring)
 
-def resolveShortcut(dir_path, shortcutsfolder, audiofolder, cardid):
+def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
     shortcutPrefix = None
     shortcut = None
-    cardpath = os.path.join(dir_path, shortcutsfolder, cardid)
+    cardpath = dir_path / shortcutsfolder / cardid
 
-    if os.path.exists(cardpath):
+    if cardpath.exists():
         shortcutPrefix = "folder"
 
-        if os.path.isfile(cardpath):
+        if cardpath.is_file():
             with open(cardpath, "r") as f:
                 shortcut_content = f.read().strip()
 
@@ -422,11 +418,12 @@ def resolveShortcut(dir_path, shortcutsfolder, audiofolder, cardid):
 
         else:
             abspath = cardpath
-            if os.path.islink(abspath):
-                abspath = os.readlink(abspath)
-            if not os.path.isabs(abspath):
-                abspath = os.path.normpath(os.path.join(dir_path, audiofolder, abspath))
-            shortcut = os.path.relpath(abspath, os.path.join(dir_path, audiofolder))
+            if abspath.is_symlink():
+                abspath = abspath.readlink()
+            if not abspath.is_absolute():
+                abspath = (dir_path / audiofolder / abspath).resolve()
+            shortcut = str((dir_path / audiofolder).relative_to(abspath))
+
     else:
         af = Path(audiofolder)
         for c in _iterdir_recursive(af, dirsonly=True):   #af.glob("**/"):
@@ -440,7 +437,7 @@ def resolveShortcut(dir_path, shortcutsfolder, audiofolder, cardid):
 
     return shortcut, shortcutPrefix
 
-def playAction(dir_path, player, connection, cardid):
+def playAction(dir_path: Path, player, connection, cardid):
     player.updateTimer(connection=connection)
 
     shortcut, shortcutPrefix = resolveShortcut(dir_path=dir_path, shortcutsfolder=player.shortcutsfolder, audiofolder=player.audiofolder, cardid=cardid)
@@ -458,17 +455,17 @@ def playAction(dir_path, player, connection, cardid):
             cmdAction(player=player, connection=connection, actionstring="continue-or-next")
             return "continue-or-next"
 
-        absFolder = os.path.join(player.dir_path, player.audiofolder, shortcut)
-        if os.path.exists(absFolder):
+        absFolder = player.dir_path / player.audiofolder / shortcut
+        if absFolder.exists():
             with connection.getConnectedClient() as client:
-                player.playFolder(client=client, relfolder=shortcut)
+                player.playFolder(client=client, relfolder=Path(shortcut))
             return "playfolder"
 
     return None
 
 
 class lircThread(threading.Thread):
-    def __init__(self, dir_path, player, connection, lircDevice, lockKeys, unlockKeys, toggleLockKeys, lircLocked, prefix="lirc"):
+    def __init__(self, dir_path: Path, player, connection, lircDevice, lockKeys, unlockKeys, toggleLockKeys, lircLocked, prefix="lirc"):
         threading.Thread.__init__(self)
         self.dir_path = dir_path
         self.player = player
@@ -580,7 +577,7 @@ class lircThread(threading.Thread):
 
 
 class rfidThread(threading.Thread):
-    def __init__(self, dir_path, reader, player, connection, sameCardDelay, latestRFIDFile, lockCardIDs, unlockCardIDs, toggleLockCardIDs, rfidLocked, prefix=""):
+    def __init__(self, dir_path: Path, reader, player, connection, sameCardDelay, latestRFIDFile, lockCardIDs, unlockCardIDs, toggleLockCardIDs, rfidLocked, prefix=""):
         threading.Thread.__init__(self)
         self.dir_path = dir_path
         self.reader = reader
@@ -651,10 +648,10 @@ def getInputDevice(inputDevices, name):
 
 
 if __name__ == "__main__":
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    logging.info('dir_path: ' + dir_path)
+    dir_path = Path(__file__).resolve().parent
+    logging.info('dir_path: ' + str(dir_path))
 
-    with open(os.path.join(dir_path, "config.json"), "r") as f:
+    with open(dir_path / "config.json", "r") as f:
         config = json.load(f)
 
     connection = MPDConnection(host=config["host"], port=config["port"], pwd=config.get("pwd", None))
@@ -666,18 +663,21 @@ if __name__ == "__main__":
                          maxVolume=config.get("maxVolume", None),
                          muteTimeoutS=config.get("muteTimeoutS", None),
                          doSavePos=config.get("savePos", True),
+                         alsaAudioDevice=config.get("alsaAudioDevice", "default"),
                          doUpdateBeforePlaying=config.get("updateBeforePlaying", True))
 
     inputThreads = []
     if config.get("rfidReaderNames", None) is not None:
-        reader = RFIDReader(deviceNames=config["rfidReaderNames"])
-        inputThreads.append(rfidThread(dir_path=dir_path, reader=reader, player=player, connection=connection,
-                                    sameCardDelay=config.get("sameCardDelay", None),
-                                    latestRFIDFile=config["latestRFIDFile"],
-                                    lockCardIDs=config.get("lockCardIDs", None),
-                                    unlockCardIDs=config.get("unlockCardIDs", None),
-                                    toggleLockCardIDs=config.get("toggleLockCardIDs", None),
-                                    rfidLocked=config.get("rfidLocked", False)))
+        for rfidReaderName in config["rfidReaderNames"]:
+            reader = RFIDReader(rfidReaderName=rfidReaderName)
+            inputThreads.append(rfidThread(dir_path=dir_path, reader=reader, player=player, connection=connection,
+                                        sameCardDelay=config.get("sameCardDelay", None),
+                                        latestRFIDFile=Path(config["latestRFIDFile"]),
+                                        lockCardIDs=config.get("lockCardIDs", None),
+                                        unlockCardIDs=config.get("unlockCardIDs", None),
+                                        toggleLockCardIDs=config.get("toggleLockCardIDs", None),
+                                        rfidLocked=config.get("rfidLocked", False)))
+
     if config.get("lirc", False):
         lircDevice = getInputDevice(inputDevices=inputDevices, name=config["lircdevice"])
         if lircDevice is None:
@@ -705,9 +705,9 @@ if __name__ == "__main__":
         player.soundEffects = config.get("soundEffects", {})
         startupsound = player.soundEffects.get("startup", None)
         if startupfolder is not None:
-            player.playFolder(client=client, relfolder=startupfolder)
+            player.playFolder(client=client, relfolder=Path(startupfolder))
         elif startupsound is not None:
-            player.playSingleFile(client=client, relSoundFile=startupsound)
+            player.playSingleFile(client=client, relSoundFile=Path(startupsound))
 
     for t2 in inputThreads:
         t2.join()

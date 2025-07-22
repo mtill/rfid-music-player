@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
+# coding=utf-8
 
 
-import os.path
-import sys
 import time
 from evdev import InputDevice, ecodes, list_devices
 from select import select
@@ -13,12 +12,13 @@ class RFIDReader:
     def _doInit(self):
         devices = [InputDevice(fn) for fn in list_devices()]
         for device in devices:
-            if device.name in self.deviceNames:
+            if device.name == self.rfidReaderName:
                 self.dev = device
+                #print(f"Using RFID reader: {self.rfidReaderName}")
                 break
 
-    def __init__(self, deviceNames):
-        self.deviceNames = deviceNames
+    def __init__(self, rfidReaderName):
+        self.rfidReaderName = rfidReaderName
 
         self.keys = "X^1234567890XXXXqwertzuiopXXXXasdfghjklXXXXXyxcvbnmXXXXXXXXXXXXXXXXXXXXXXX"
         self.dev = None
