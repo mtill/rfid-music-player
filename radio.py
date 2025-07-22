@@ -427,7 +427,7 @@ def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
     else:
         af = Path(audiofolder)
         for c in _iterdir_recursive(af, dirsonly=True):   #af.glob("**/"):
-            if c.name.find(cardid) != -1:
+            if cardid in c.name.split("-"):
                 shortcutPrefix = "folder"
                 shortcut = str(c.relative_to(af))
                 break

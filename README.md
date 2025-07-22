@@ -79,9 +79,10 @@ cd RFID_REPO_PATH
 ## how to use
 
 ### how to add music
-On the USB flash drive, map RFID codes to the music folders by appending the RFID code to the folder names.
-As an example, if you have a folder named "party songs for children" and you'd like to map it to RFID card 00012345, then rename that folder to, e.g., "party songs for children-00012345".
+On the USB flash drive, map RFID codes to the music folders by appending the RFID code to the folder names, by using "-" as a separator.
+As an example, if you have a folder named "party songs for children" and you'd like to map it to RFID card 00012345, then rename that folder to, e.g., "party songs for children-00012345" (important: don't forget the "-"!).
 It's not important how exactly you're going to name that folder, as long as the exact RFID code is part of the folder name.
+You can assign multiple RFID cards to one folder, e.g., like this: "party songs for children-00012345-00054321".
 
 ### how to add audiobooks
 This works analogously to adding music files. For audiobooks, however, you usually want to resume listening on the latest playback position. To enable auto-resume, create a folder "audiobooks" on your USB flash drive and in that folder, create a file "folder.json" with the following content:
