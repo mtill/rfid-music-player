@@ -405,8 +405,8 @@ def cmdAction(player, connection, actionstring):
                 logging.info("unknown cmd action: " + actionstring)
 
 def resolveShortcut(dir_path, shortcutsfolder, audiofolder, cardid):
-    shortcut = None
     shortcutPrefix = None
+    shortcut = None
     cardpath = os.path.join(dir_path, shortcutsfolder, cardid)
 
     if os.path.exists(cardpath):
@@ -414,12 +414,12 @@ def resolveShortcut(dir_path, shortcutsfolder, audiofolder, cardid):
 
         if os.path.isfile(cardpath):
             with open(cardpath, "r") as f:
-                shortcut = f.read().strip()
+                shortcut_content = f.read().strip()
 
-            if shortcut.startswith("cmd://"):
-                shortcutPrefix = "cmd://"
-            elif shortcut.startswith("extcmd://"):
-                shortcutPrefix = "extcmd://"
+            shortcutPrefixPos = shortcut_content.find("://")
+            if shortcutPrefixPos != -1:
+                shortcutPrefix = shortcut_content[:shortcutPrefixPos]
+                shortcut = shortcut_content[shortcutPrefixPos + 3:]
 
         else:
             abspath = cardpath
@@ -448,22 +448,24 @@ def playAction(dir_path, player, connection, cardid):
     if shortcut is None or shortcutPrefix is None:
         return None
 
-    if shortcutPrefix == "cmd://":
-        cmdAction(player=player, connection=connection, actionstring=shortcut[6:])
+    if shortcutPrefix == "cmd":
+        cmdAction(player=player, connection=connection, actionstring=shortcut)
         return shortcut
-    elif shortcutPrefix == "extcmd://":
-        subprocess.call(shortcut[9:], shell=True)
+    elif shortcutPrefix == "extcmd":
+        subprocess.call(shortcut, shell=True)
         return shortcut
+    elif shortcutPrefix == "folder":
+        if shortcut == player.currentFolder:
+            cmdAction(player=player, connection=connection, actionstring="continue-or-next")
+            return "continue-or-next"
 
-    if shortcut == player.currentFolder:
-        cmdAction(player=player, connection=connection, actionstring="continue-or-next")
-        return "continue-or-next"
+        absFolder = os.path.join(player.dir_path, player.audiofolder, shortcut)
+        if os.path.exists(absFolder):
+            with connection.getConnectedClient() as client:
+                player.playFolder(client=client, relfolder=shortcut)
+            return "playfolder"
 
-    absFolder = os.path.join(player.dir_path, player.audiofolder, shortcut)
-    if os.path.exists(absFolder):
-        with connection.getConnectedClient() as client:
-            player.playFolder(client=client, relfolder=shortcut)
-    return "playfolder"
+    return None
 
 
 class lircThread(threading.Thread):
