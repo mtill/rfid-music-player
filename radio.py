@@ -7,7 +7,6 @@ import logging
 logfilename = '/var/tmp/radio.log'
 logging.basicConfig(filename=logfilename, filemode='w', level=logging.INFO)
 
-RESUME_FOLDERNAMES = ["Audiobooks", "Podcasts", "Hörbücher", "Kinder-Hörbücher"]
 
 import time
 import datetime
@@ -17,6 +16,7 @@ from pathlib import Path
 import subprocess
 import threading
 from contextlib import contextmanager
+from collections import deque
 
 import evdev
 from mpd import MPDClient
@@ -26,23 +26,29 @@ from RFIDReader import RFIDReader
 # Recursive function to iterate through all files in a directory and its subdirectories
 # alternatively, you can use `pathlib.Path.rglob('**/*', recurse_symlinks=True)` to achieve the same result, but recurse_symlinks is only available in Python 3.13+
 def _iterdir_recursive(path: Path, dirsonly=False):
+    queue = deque([path])
+    visited = []
 
-    # traverse files first
-    thedirs = []
-    thefiles = []
-    for p in path.iterdir():
-        if p.is_dir():
-            thedirs.append(p)
-        else:
-            thefiles.append(p)
+    while queue:
+        current_path = queue.popleft()
+        current_path_abs = current_path.resolve().as_posix()
+        if current_path_abs in visited:
+            continue
+        visited.append(current_path_abs)
 
-    for p in sorted(thefiles) + sorted(thedirs):
-        if p.is_dir():
-            yield p
-            yield from _iterdir_recursive(p, dirsonly=dirsonly)
-        else:
-            if not dirsonly:
-                yield p
+        # traverse files first
+        thedirs = []
+        thefiles = []
+        for p in current_path.iterdir():
+            if p.is_dir():
+                thedirs.append(p)
+            elif not dirsonly:
+                thefiles.append(p)
+
+        for r in sorted(thefiles, key=lambda x: x.name.lower()) + sorted(thedirs, key=lambda x: x.name.lower()):
+            yield r
+            if r.is_dir():
+                queue.append(r)
 
 
 class MPDConnection():
@@ -160,11 +166,6 @@ class MusicPlayer():
             if os.path.exists(folderConfFile):
                 with open(folderConfFile, "r") as folderConfFileObj:
                     folderConf |= json.load(folderConfFileObj)
-
-        for rfs in relfolder.split("/"):
-            if rfs in RESUME_FOLDERNAMES:
-                folderConf["resume"] = True
-                break
 
         self.currentFolder = relfolder
         self.currentFolderConf = folderConf
