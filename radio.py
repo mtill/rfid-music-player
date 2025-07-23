@@ -22,9 +22,13 @@ from mpd import MPDClient
 from RFIDReader import RFIDReader
 
 
-# Recursive function to iterate through all files in a directory and its subdirectories
-# alternatively, you can use `pathlib.Path.rglob('**/*', recurse_symlinks=True)` to achieve the same result, but recurse_symlinks is only available in Python 3.13+
-def _iterdir_recursive(path: Path, dirsonly=False):
+
+def _iterdir_recursive(path: Path, listdirs=True, listfiles=True):
+    # Recursive function to iterate through all files in a directory and its subdirectories (BFS order)
+    # Returns files first, then directories
+    # If listdirs is False, directories are not yielded
+    # If listfiles is False, files are not yielded
+
     queue = deque([path])
     visited = []
 
@@ -35,19 +39,23 @@ def _iterdir_recursive(path: Path, dirsonly=False):
             continue
         visited.append(current_path_abs)
 
-        # traverse files first
         thedirs = []
         thefiles = []
         for p in current_path.iterdir():
-            if p.is_dir():
+            if p.is_dir():   # this follows symlinks
                 thedirs.append(p)
-            elif not dirsonly:
+            elif listfiles:
                 thefiles.append(p)
 
-        for r in sorted(thefiles, key=lambda x: x.name.lower()) + sorted(thedirs, key=lambda x: x.name.lower()):
-            yield r
-            if r.is_dir():
-                queue.append(r)
+        # traverse files first
+        if listfiles:
+            for r in sorted(thefiles, key=lambda x: x.name.lower()):
+                yield r
+
+        for r in sorted(thedirs, key=lambda x: x.name.lower()):
+            if listdirs:
+                yield r
+            queue.append(r)
 
 
 class MPDConnection():
@@ -147,33 +155,6 @@ class MusicPlayer():
                     logging.error('failed to write lastPos: ' + self.currentFolderConf["uri"])
                     return False
         return True
-
-    def playEntry(self, client, relpath):
-        logging.info('playEntry: ' + str(relpath))
-        self._stopAlsaProcesses()
-        self.savePos(client=client)
-
-        absFile = self.dir_path / self.audiofolder / relpath
-        if not absFile.exists():
-            logging.error("file does not exist: " + str(absFile))
-            return
-
-        absFolderRel = self.dir_path / self.audiofolder
-
-        folderConf = {}
-        for r in relpath.parts:
-            absFolderRel = absFolderRel / r
-            folderConfFile = absFolderRel / "folder.json"
-            if folderConfFile.exists():
-                with open(folderConfFile, "r") as folderConfFileObj:
-                    folderConf |= json.load(folderConfFileObj)
-
-        client.clear()
-        client.single(0)
-        client.repeat(0)
-        client.add(relpath)
-        client.play(0)
-
 
     def playFolder(self, client, relfolder):
         logging.info('playFolder: ' + str(relfolder))
@@ -453,7 +434,7 @@ def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
 
     else:
         af = Path(audiofolder)
-        for c in _iterdir_recursive(af, dirsonly=True):   #af.glob("**/"):
+        for c in _iterdir_recursive(af, listdirs=True, listfiles=False):
             if cardid in c.name.split("-"):
                 shortcutPrefix = "folder"
                 shortcut = str(c.relative_to(af))
