@@ -1,7 +1,7 @@
-# rfid-music-player: RFID based music player, fast as lightning
-Similar to the phoniebox.de project - but more lightweight.
+# rfid-music-player
+RFID based music player, fast as lightning. Similar to the phoniebox.de project - but more lightweight.
 
-**Boot time on a raspberry pi zero 2: ~30 seconds**
+**🚀 Boot time on a raspberry pi zero 2: ~30 seconds 🚀**
 
 ## how to install
 - install dependencies
