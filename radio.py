@@ -152,7 +152,7 @@ class MusicPlayer():
                     with open(lastPosFile, "w") as f:
                         json.dump(lastPos, f)
                 except:
-                    logging.error('failed to write lastPos: ' + self.currentFolderConf["uri"])
+                    logging.error('failed to write lastPos: ' + str(absFolder))
                     return False
         return True
 
@@ -459,7 +459,7 @@ def playAction(dir_path: Path, player, connection, cardid):
         subprocess.call(shortcut, shell=True)
         return shortcut
     elif shortcutPrefix == "folder":
-        if shortcut == player.currentFolder:
+        if shortcut == str(player.currentFolder):
             cmdAction(player=player, connection=connection, actionstring="continue-or-next")
             return "continue-or-next"
 
