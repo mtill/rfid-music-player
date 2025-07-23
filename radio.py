@@ -148,6 +148,33 @@ class MusicPlayer():
                     return False
         return True
 
+    def playEntry(self, client, relpath):
+        logging.info('playEntry: ' + str(relpath))
+        self._stopAlsaProcesses()
+        self.savePos(client=client)
+
+        absFile = self.dir_path / self.audiofolder / relpath
+        if not absFile.exists():
+            logging.error("file does not exist: " + str(absFile))
+            return
+
+        absFolderRel = self.dir_path / self.audiofolder
+
+        folderConf = {}
+        for r in relpath.parts:
+            absFolderRel = absFolderRel / r
+            folderConfFile = absFolderRel / "folder.json"
+            if folderConfFile.exists():
+                with open(folderConfFile, "r") as folderConfFileObj:
+                    folderConf |= json.load(folderConfFileObj)
+
+        client.clear()
+        client.single(0)
+        client.repeat(0)
+        client.add(relpath)
+        client.play(0)
+
+
     def playFolder(self, client, relfolder):
         logging.info('playFolder: ' + str(relfolder))
         self._stopAlsaProcesses()
@@ -182,15 +209,15 @@ class MusicPlayer():
                         break
                     time.sleep(0.5)
 
-            client.add(relfolder)
+            client.add(relfolder.as_posix())
 
         elif folderType in ["stream"]:
             if theuri is not None:
-                client.add(str(theuri))
+                client.add(theuri)
 
         elif folderType in ["playlist", "playlist-stream"]:
             if theuri is not None:
-                client.load(str(theuri))
+                client.load(theuri)
 
         else:
             logging.info("unknown folder type: " + folderType)
@@ -286,7 +313,7 @@ class MusicPlayer():
             client.single(1)
             rrepeat = 1 if repeat else 0
             client.repeat(rrepeat)
-            client.add(relSoundFile)
+            client.add(relSoundFile.as_posix())
             client.play(0)
 
     def record(self, client, durationInSeconds):
