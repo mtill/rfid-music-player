@@ -328,7 +328,7 @@ class MusicPlayer():
         waitmusic = self.soundEffects.get("wait", None)
         if waitmusic is not None:
             with connection.getConnectedClient() as client:
-                self.playSingleFile(client=client, relSoundFile=waitmusic, repeat=True)
+                self.playSingleFile(client=client, relSoundFile=Path(waitmusic), repeat=True)
 
         try:
             subprocess.call(["./sync-this-phoniebox.sh"], shell=True)
@@ -344,7 +344,7 @@ class MusicPlayer():
                 if client.status().get("updating_db", None) is None:
                     donemusic = self.soundEffects.get("done", None)
                     if donemusic is not None:
-                        self.playSingleFile(client=client, relSoundFile=donemusic)
+                        self.playSingleFile(client=client, relSoundFile=Path(donemusic))
                     else:
                         self.pause(client=client)
                     break
@@ -401,7 +401,7 @@ def cmdAction(player, connection, actionstring):
             elif actionstring == "playstartupsound":
                 startupsound = player.soundEffects.get("startup", None)
                 if startupsound is not None:
-                    player.playSingleFile(client=client, relSoundFile=startupsound)
+                    player.playSingleFile(client=client, relSoundFile=Path(startupsound))
             elif actionstring == "ignore":
                 logging.info("action: ignore.")
             else:
