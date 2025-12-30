@@ -291,6 +291,7 @@ class MusicPlayer():
             self.savePos(client=client)
             client.stop()
             client.clear()
+            self.currentFolder = None
             client.single(1)
             rrepeat = 1 if repeat else 0
             client.repeat(rrepeat)
