@@ -436,7 +436,7 @@ def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
     else:
         af = Path(audiofolder)
 
-        for c in _iterdir_recursive(af, listdirs=True, listfiles=False):
+        for c in _iterdir_recursive(af, listdirs=True, listfiles=True):
             if cardid in c.name.split("-"):
 
                 if c.is_file():
