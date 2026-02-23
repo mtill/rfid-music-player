@@ -434,23 +434,22 @@ def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
             shortcut = str((dir_path / audiofolder).relative_to(abspath))
 
     else:
-        af = Path(audiofolder)
+        af = dir_path / audiofolder
 
-        for c in _iterdir_recursive(af, listdirs=True, listfiles=True):
-            if cardid in c.name.split("-"):
+        c = af / cardid
+        if c.is_file():
+            with open(c, "r") as f:
+                shortcut_content = f.read().strip()
 
-                if c.is_file():
-                    with open(c, "r") as f:
-                        shortcut_content = f.read().strip()
+            shortcutPrefixPos = shortcut_content.find("://")
+            if shortcutPrefixPos != -1:
+                shortcutPrefix = shortcut_content[:shortcutPrefixPos]
+                shortcut = shortcut_content[shortcutPrefixPos + 3:]
 
-                    shortcutPrefixPos = shortcut_content.find("://")
-                    if shortcutPrefixPos != -1:
-                        shortcutPrefix = shortcut_content[:shortcutPrefixPos]
-                        shortcut = shortcut_content[shortcutPrefixPos + 3:]
-                        break
+        else:
 
-                else:
-
+            for c in _iterdir_recursive(af, listdirs=True, listfiles=False):
+                if cardid in c.name.split("-"):
                     shortcutPrefix = "folder"
                     shortcut = str(c.relative_to(af))
                     break
@@ -459,6 +458,7 @@ def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
         logging.info("ignoring cardid " + cardid)
 
     return shortcut, shortcutPrefix
+
 
 def playAction(dir_path: Path, player, connection, cardid):
     player.updateTimer(connection=connection)
