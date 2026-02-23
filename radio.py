@@ -435,11 +435,24 @@ def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
 
     else:
         af = Path(audiofolder)
-        for c in _iterdir_recursive(af, listdirs=True, listfiles=False):
-            if cardid in c.name.split("-"):
-                shortcutPrefix = "folder"
-                shortcut = str(c.relative_to(af))
-                break
+
+        afpath = af / cardid
+        if afpath.is_file():
+            with open(afpath, "r") as f:
+                shortcut_content = f.read().strip()
+
+            shortcutPrefixPos = shortcut_content.find("://")
+            if shortcutPrefixPos != -1:
+                shortcutPrefix = shortcut_content[:shortcutPrefixPos]
+                shortcut = shortcut_content[shortcutPrefixPos + 3:]
+
+        else:
+
+            for c in _iterdir_recursive(af, listdirs=True, listfiles=False):
+                if cardid in c.name.split("-"):
+                    shortcutPrefix = "folder"
+                    shortcut = str(c.relative_to(af))
+                    break
 
     if shortcut is None:
         logging.info("ignoring cardid " + cardid)
