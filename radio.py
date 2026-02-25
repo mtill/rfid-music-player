@@ -124,7 +124,7 @@ class MusicPlayer():
         return self.recordProcess is not None and self.recordProcess.poll() is None
 
     def stopRecording(self):
-        if self._isRecording():
+        if self._isRecording() and self.recordProcess is not None:
             self.recordProcess.kill()
             return True
         return False
@@ -408,12 +408,23 @@ def cmdAction(player, connection, actionstring):
             else:
                 logging.info("unknown cmd action: " + actionstring)
 
+def _get_existing_file(list_of_files):
+    for l_file in list_of_files:
+        if l_file.is_file():
+            return l_file
+    return None
+
+
 def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
     shortcutPrefix = None
     shortcut = None
-    cardpath = dir_path / shortcutsfolder / cardid
 
-    if cardpath.exists():
+    list_of_files = [dir_path / shortcutsfolder / cardid,
+                     dir_path / audiofolder / "commands" / cardid,
+                     dir_path / audiofolder / cardid]
+
+    cardpath = _get_existing_file(list_of_files=list_of_files)
+    if cardpath is not None:
         shortcutPrefix = "folder"
 
         if cardpath.is_file():
@@ -435,24 +446,11 @@ def resolveShortcut(dir_path: Path, shortcutsfolder, audiofolder, cardid):
 
     else:
         af = dir_path / audiofolder
-
-        c = af / cardid
-        if c.is_file():
-            with open(c, "r") as f:
-                shortcut_content = f.read().strip()
-
-            shortcutPrefixPos = shortcut_content.find("://")
-            if shortcutPrefixPos != -1:
-                shortcutPrefix = shortcut_content[:shortcutPrefixPos]
-                shortcut = shortcut_content[shortcutPrefixPos + 3:]
-
-        else:
-
-            for c in _iterdir_recursive(af, listdirs=True, listfiles=False):
-                if cardid in c.name.split("-"):
-                    shortcutPrefix = "folder"
-                    shortcut = str(c.relative_to(af))
-                    break
+        for c in _iterdir_recursive(af, listdirs=True, listfiles=False):
+            if cardid in c.name.split("-"):
+                shortcutPrefix = "folder"
+                shortcut = str(c.relative_to(af))
+                break
 
     if shortcut is None:
         logging.info("ignoring cardid " + cardid)
